@@ -321,7 +321,7 @@ endfunction
 
 function! s:CurrentPath()
     let cwd = '"' . expand("%:p") . '"'
-    return cwd
+    return g:FindGitRoot(cwd)
 endfunction
 
 
@@ -529,7 +529,40 @@ function! s:ResetAll()
 endfunction!
 
 
+
+function! g:FindGitRoot(path)
+python << endpython
+import os
+import subprocess
+import vim
+path = vim.eval("a:path")
+path = path.strip('"')
+dirname = os.path.dirname(path)
+
+git_path = subprocess.check_output(
+    ['git', 'rev-parse', '--show-toplevel'],
+    cwd=dirname
+).strip()
+
+rel_path = path.replace(git_path + '/', '')
+
+vim.command('let l:relpath = "{}"'.format(rel_path))
+endpython
+return l:relpath
+endfunction!
+
+
+function! s:RunViaClipboard(path)
+    let @+ = "py.test " . a:path . "\n"
+endfunction!
+
+
 function! s:RunPyTest(path)
+
+    return
+
+
+
     let g:pytest_last_session = ""
     let cmd = "py.test --tb=short " . a:path
     let out = system(cmd)
@@ -769,7 +802,7 @@ function! s:ThisMethod(verbose, ...)
     if (a:verbose == 1)
         call s:RunInSplitWindow(path)
     else
-       call s:RunPyTest(path)
+       call s:RunViaClipboard(path)
     endif
 endfunction
 
@@ -802,7 +835,7 @@ function! s:ThisFunction(verbose, ...)
     if (a:verbose == 1)
         call s:RunInSplitWindow(path)
     else
-        call s:RunPyTest(path)
+        call s:RunViaClipboard(path)
     endif
 endfunction
 
@@ -834,7 +867,7 @@ function! s:ThisClass(verbose, ...)
     if (a:verbose == 1)
         call s:RunInSplitWindow(path)
     else
-        call s:RunPyTest(path)
+        call s:RunViaClipboard(path)
     endif
 endfunction
 
@@ -857,7 +890,7 @@ function! s:ThisFile(verbose, ...)
     if (a:verbose == 1)
         call s:RunInSplitWindow(abspath)
     else
-        call s:RunPyTest(abspath)
+        call s:RunViaClipboard(abspath)
     endif
 endfunction
 
